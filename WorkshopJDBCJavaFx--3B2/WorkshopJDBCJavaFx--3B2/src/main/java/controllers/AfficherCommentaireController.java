@@ -18,6 +18,7 @@ import services.ServiceCommentaire;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 public class AfficherCommentaireController {
@@ -29,6 +30,8 @@ public class AfficherCommentaireController {
     private TableColumn colUser;
     @FXML
     private Label lblTitrePublication;
+    @FXML
+    private Label lblStatusCommentaire;
     @FXML
     private TableView<Commentaire> tvCommentaires;
 
@@ -45,20 +48,40 @@ public class AfficherCommentaireController {
 
     public void setPublication(Publication publication) {
         this.currentPublication = publication;
-        lblTitrePublication.setText("Commentaires pour la publication: " + publication.getTitre());
+        lblTitrePublication.setText("Commentaires pour: " + publication.getTitre());
 
         try {
-            refreshCommentaires();
+            List<Commentaire> commentaires = serviceCommentaire.getCommentairesByPublication(publication.getId_publication());
+            refreshCommentaires(commentaires);
+            
+            // Mettre à jour le statut
+            if (commentaires.isEmpty()) {
+                lblStatusCommentaire.setText("Aucun commentaire pour cette publication");
+            } else {
+                lblStatusCommentaire.setText(commentaires.size() + " commentaire(s) trouvé(s)");
+            }
         } catch (SQLException e) {
-            showErrorAlert("Error loading comments", e.getMessage());
+            showErrorAlert("Erreur de chargement", "Erreur lors du chargement des commentaires: " + e.getMessage());
+            lblStatusCommentaire.setText("Erreur lors du chargement des commentaires");
         }
     }
 
+    private void refreshCommentaires(List<Commentaire> commentaires) {
+        ObservableList<Commentaire> observableCommentaires = FXCollections.observableList(commentaires);
+        tvCommentaires.setItems(observableCommentaires);
+    }
+    
     private void refreshCommentaires() throws SQLException {
         if (currentPublication != null) {
-            ObservableList<Commentaire> commentaires = FXCollections.observableList(
-                    serviceCommentaire.getCommentairesByPublication(currentPublication.getId_publication()));
-            tvCommentaires.setItems(commentaires);
+            List<Commentaire> commentaires = serviceCommentaire.getCommentairesByPublication(currentPublication.getId_publication());
+            refreshCommentaires(commentaires);
+            
+            // Mettre à jour le statut
+            if (commentaires.isEmpty()) {
+                lblStatusCommentaire.setText("Aucun commentaire pour cette publication");
+            } else {
+                lblStatusCommentaire.setText(commentaires.size() + " commentaire(s) trouvé(s)");
+            }
         }
     }
 
@@ -74,7 +97,8 @@ public class AfficherCommentaireController {
 
             tvCommentaires.getScene().setRoot(root);
         } catch (IOException e) {
-            showErrorAlert("Navigation Error", "Unable to load comment form: " + e.getMessage());
+            showErrorAlert("Erreur de navigation", "Impossible de charger le formulaire de commentaire: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -82,7 +106,7 @@ public class AfficherCommentaireController {
     void ModifierCommentaire(ActionEvent event) {
         Commentaire selectedCommentaire = tvCommentaires.getSelectionModel().getSelectedItem();
         if (selectedCommentaire == null) {
-            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a comment to modify.");
+            showAlert(Alert.AlertType.WARNING, "Aucune sélection", "Veuillez sélectionner un commentaire à modifier.");
             return;
         }
 
@@ -97,7 +121,8 @@ public class AfficherCommentaireController {
 
             tvCommentaires.getScene().setRoot(root);
         } catch (IOException e) {
-            showErrorAlert("Navigation Error", "Unable to load comment form: " + e.getMessage());
+            showErrorAlert("Erreur de navigation", "Impossible de charger le formulaire de commentaire: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -105,21 +130,22 @@ public class AfficherCommentaireController {
     void SupprimerCommentaire(ActionEvent event) {
         Commentaire selectedCommentaire = tvCommentaires.getSelectionModel().getSelectedItem();
         if (selectedCommentaire == null) {
-            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a comment to delete.");
+            showAlert(Alert.AlertType.WARNING, "Aucune sélection", "Veuillez sélectionner un commentaire à supprimer.");
             return;
         }
 
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
-                "Are you sure you want to delete this comment?");
+                "Êtes-vous sûr de vouloir supprimer ce commentaire?");
         Optional<ButtonType> result = confirmation.showAndWait();
 
         if (result.isPresent() && result.get() == ButtonType.OK) {
             try {
                 serviceCommentaire.supprimer(selectedCommentaire);
                 refreshCommentaires();
-                showAlert(Alert.AlertType.INFORMATION, "Success", "Comment deleted successfully.");
+                showAlert(Alert.AlertType.INFORMATION, "Succès", "Commentaire supprimé avec succès.");
             } catch (SQLException e) {
-                showErrorAlert("Delete Error", "Failed to delete comment: " + e.getMessage());
+                showErrorAlert("Erreur de suppression", "Échec de la suppression du commentaire: " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
@@ -130,16 +156,9 @@ public class AfficherCommentaireController {
             Parent root = FXMLLoader.load(getClass().getResource("/AfficherPublication.fxml"));
             tvCommentaires.getScene().setRoot(root);
         } catch (IOException e) {
-            showErrorAlert("Navigation Error", "Unable to load publications view: " + e.getMessage());
+            showErrorAlert("Erreur de navigation", "Impossible de charger la liste des publications: " + e.getMessage());
+            e.printStackTrace();
         }
-    }
-
-    private void showErrorAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
@@ -148,5 +167,9 @@ public class AfficherCommentaireController {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private void showErrorAlert(String title, String content) {
+        showAlert(Alert.AlertType.ERROR, title, content);
     }
 }

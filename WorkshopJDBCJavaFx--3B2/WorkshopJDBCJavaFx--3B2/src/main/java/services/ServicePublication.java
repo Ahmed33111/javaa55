@@ -78,6 +78,11 @@ public class ServicePublication implements IService<Publication> {
         return publications;
     }
 
+    // Alias pour recuperer() pour maintenir la cohérence avec d'autres services
+    public List<Publication> afficher() throws SQLException {
+        return recuperer();
+    }
+
     // Méthode pour trouver une publication par son ID
     public Publication findById(int id) throws SQLException {
         String req = "SELECT * FROM publication WHERE id_publication=?";

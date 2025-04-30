@@ -23,8 +23,9 @@ public class AjouterPublicationController {
     private TextArea taContenu;
     @FXML
     private TextField tfTitre;
-    @FXML
-    private TextField tfUserId;
+    
+    // ID utilisateur par défaut
+    private final int DEFAULT_USER_ID = 1;
 
     private Publication publicationToUpdate;
     private boolean isUpdateMode = false;
@@ -48,8 +49,6 @@ public class AjouterPublicationController {
         if (publication.getDate_publication() != null) {
             dpDatePublication.setValue(publication.getDate_publication().toLocalDate());
         }
-
-        tfUserId.setText(String.valueOf(publication.getId_user()));
     }
 
     @FXML
@@ -62,7 +61,7 @@ public class AjouterPublicationController {
             String titre = tfTitre.getText();
             String contenu = taContenu.getText();
             Date datePublication = Date.valueOf(dpDatePublication.getValue());
-            int userId = Integer.parseInt(tfUserId.getText());
+            int userId = DEFAULT_USER_ID;
 
             if (isUpdateMode) {
                 Publication updatedPublication = new Publication(
@@ -110,17 +109,6 @@ public class AjouterPublicationController {
 
         if (dpDatePublication.getValue() == null) {
             showAlert(Alert.AlertType.WARNING, "Validation Error", "Please select a date.");
-            return false;
-        }
-
-        try {
-            int userId = Integer.parseInt(tfUserId.getText());
-            if (userId <= 0) {
-                showAlert(Alert.AlertType.WARNING, "Validation Error", "User ID must be a positive number.");
-                return false;
-            }
-        } catch (NumberFormatException e) {
-            showAlert(Alert.AlertType.WARNING, "Validation Error", "User ID must be a valid number.");
             return false;
         }
 

@@ -10,14 +10,17 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Stage;
 import services.ServicePublication;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Optional;
 
 public class AfficherPublicationController {
@@ -119,16 +122,55 @@ public class AfficherPublicationController {
         }
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/AfficherCommentaire.fxml"));
+            // Essayer plusieurs méthodes de chargement
+            FXMLLoader loader = null;
+            try {
+                // Méthode 1: Utiliser getClassLoader().getResource()
+                loader = new FXMLLoader(getClass().getClassLoader().getResource("AfficherCommentaire.fxml"));
+                if (loader.getLocation() == null) {
+                    // Méthode 2: Utiliser getClass().getResource() avec slash
+                    loader = new FXMLLoader(getClass().getResource("/AfficherCommentaire.fxml"));
+                }
+            } catch (Exception e) {
+                // Méthode 3: Dernier recours
+                loader = new FXMLLoader(getClass().getResource("/AfficherCommentaire.fxml"));
+            }
+            
+            if (loader.getLocation() == null) {
+                throw new IOException("Cannot find FXML file: AfficherCommentaire.fxml");
+            }
+            
+            System.out.println("FXML location: " + loader.getLocation());
             Parent root = loader.load();
 
             // Get controller and pass the selected publication
             AfficherCommentaireController controller = loader.getController();
-            controller.setPublication(selectedPublication);
+            if (controller != null) {
+                controller.setPublication(selectedPublication);
+            } else {
+                System.err.println("Controller is null!");
+            }
 
-            tvPublications.getScene().setRoot(root);
+            // Mettre à jour le titre de la fenêtre
+            tests.MainFX.getMainStage().setTitle("Commentaires - " + selectedPublication.getTitre());
+            tests.MainFX.getMainStage().setScene(new Scene(root));
         } catch (IOException e) {
             showErrorAlert("Navigation Error", "Unable to load comments view: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            showErrorAlert("Unexpected Error", "An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    void AfficherStatistiques(ActionEvent event) {
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource("/Statistiques.fxml"));
+            tvPublications.getScene().setRoot(root);
+        } catch (IOException e) {
+            showErrorAlert("Navigation Error", "Unable to load statistics view: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
